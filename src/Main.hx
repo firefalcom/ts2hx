@@ -10,6 +10,7 @@ private class Config {
 	public var recursive = false;
 	public var ignoreErrors = false;
 	public var inclusionFilters:Array<EReg> = [];
+	public var header:String;
 
 	public function new() { }
 }
@@ -38,6 +39,10 @@ class Main {
 			@doc("Only convert files which match this regular expression")
 			"--in" => function(ereg:String) {
 				config.inclusionFilters.push(new EReg(ereg, ""));
+			},
+			@doc("Prepend generated file with header file content")
+			"--header" => function(header:String) {
+				config.header = header;
 			},
 			"--help" => function() {
 				printHelp = true;
@@ -68,6 +73,8 @@ class Main {
 		}
 		run(config);
 	}
+
+	static var headerContent:String = "";
 
 	/**
 		Executes Ts2Hx with the given `config`.
@@ -103,6 +110,14 @@ class Main {
 					}
 				}
 			}
+		}
+
+		if (config.header != null) {
+			if (!sys.FileSystem.exists(config.header)) {
+				Sys.println("Could not open header " + config.header);
+			}
+
+			headerContent = sys.io.File.getContent(config.header);
 		}
 		var errors = [];
 		for (path in config.inPaths) {
@@ -157,7 +172,7 @@ class Main {
 				buf.add("\n");
 			}
 			if (buf.length > 0) {
-				sys.io.File.saveContent(outPath, buf.toString());
+				sys.io.File.saveContent(outPath, (headerContent != null ? headerContent + '\n' : "") + buf.toString());
 				Sys.println('Written $outPath');
 			}
 		}
