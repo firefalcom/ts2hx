@@ -32,9 +32,23 @@ class Converter {
 			case DModule(m) | DExternalModule(m):
 				convertModule(m);
 			case DInterface(i):
-				currentModule.types.push(convertInterface(i));
+				var name = capitalize(i.name);
+				var td = getTypeByName(name );
+
+				if(td == null){
+					currentModule.types.push(convertInterface(i));
+				} else {
+					mergeInterface(i, td);
+				}
 			case DClass(c):
-				currentModule.types.push(convertClass(c));
+				var name = capitalize(c.name);
+				var td = getTypeByName(name );
+
+				if(td == null){
+					currentModule.types.push(convertClass(c));
+				} else {
+					mergeClass(c, td);
+				}
 			case DEnum(en):
 				currentModule.types.push(convertEnum(en));
 			case DTypedef(t):
@@ -128,6 +142,29 @@ class Converter {
 		return td;
 	}
 
+	function mergeInterface(i:TsInterface, typeDefinition:TypeDefinition) : Void {
+		var fields = convertFields(i.t);
+		var parents = i.parents.map(convertTypeReference);
+
+		switch(typeDefinition.kind){
+			case TDAlias(kind):
+				switch(kind){
+					case TAnonymous(existing_fields):
+						var kind = TAnonymous(existing_fields.concat(fields));
+						typeDefinition.kind = TDAlias(kind);
+
+					case TExtend(parents, existing_fields):
+						var kind = TExtend(parents, existing_fields.concat(fields));
+						typeDefinition.kind = TDAlias(kind);
+
+					default:
+						trace("Unsupported type, unable to merge interface");
+				}
+			default:
+				trace("Unsupported type");
+		}
+	}
+
 	function convertClass(c:TsClass) : TypeDefinition {
 		var fields = convertFields(c.t);
 		var interfaces = c.interfaces.map(convertTypeReference);
@@ -144,6 +181,43 @@ class Converter {
 			fields: fields
 		}
 		return td;
+	}
+
+	function mergeClass(c:TsClass, typeDefinition : TypeDefinition ) : Void{
+		var fields = convertFields(c.t);
+		var interfaces = c.interfaces.map(convertTypeReference);
+		interfaces = [];
+		var parent_class = c.parentClass == null ? null : convertTypeReference(c.parentClass);
+		var kind = TDClass(parent_class, interfaces);
+
+		typeDefinition.isExtern = true;
+
+		switch(typeDefinition.kind){
+			case TDAlias(interface_kind):
+				switch(interface_kind){
+					case TAnonymous(existing_fields):
+						typeDefinition.fields = existing_fields.concat(fields);
+						typeDefinition.kind = kind;
+
+					case TExtend(parents, existing_fields):
+						typeDefinition.fields = existing_fields.concat(fields);
+						typeDefinition.kind = kind;
+
+					default:
+						trace("Unsupported type, unable to merge interface");
+				}
+
+			case TDClass(parent, existing_interfaces):
+				if(parent != null && parent != parent_class){
+					trace("Merging of class with different parents is not supported");
+				}
+
+				typeDefinition.fields = typeDefinition.fields.concat(fields);
+				typeDefinition.kind = TDClass(parent_class, existing_interfaces.concat(interfaces));
+
+			default:
+				trace("Unsupported");
+		}
 	}
 
 	function convertEnum(en:TsEnum) : TypeDefinition {
@@ -311,6 +385,16 @@ class Converter {
 			case TStringLiteral(s): s;
 			case TNumericLiteral(s): "_" + s;
 		}
+	}
+
+	function getTypeByName(name:String):TypeDefinition{
+		for(type in currentModule.types){
+			if(type.name == name){
+				return type;
+			}
+		}
+
+		return null;
 	}
 
 	function pathToString(p:TsIdentifierPath) {
