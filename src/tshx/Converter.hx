@@ -212,10 +212,17 @@ class Converter {
 
 	function convertArgument(arg:TsArgument):FunctionArg {
 		return {
-			name: arg.name,
+			name: convertArgumentName(arg.name),
 			opt: arg.optional,
 			type: arg.type == null ? tDynamic : convertType(arg.type),
 			value: null
+		}
+	}
+
+	function convertArgumentName(name:String):String{
+		return switch(name){
+			case 'dynamic': '_dynamic';
+			default : name;
 		}
 	}
 
