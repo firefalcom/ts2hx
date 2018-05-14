@@ -92,6 +92,9 @@ class Converter {
 					f.expr = { expr: EBlock([]), pos: nullPos };
 					field2.meta.push({name: ":overload", params: [{expr:EFunction(null, f), pos: nullPos}], pos: nullPos});
 				} else {
+					if(field.name == 'protected' || field.name == 'abstract'){
+						continue;
+					}
 					fields.push(field);
 					fieldMap[field.name] = field;
 				}

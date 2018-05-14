@@ -24,6 +24,8 @@ enum TsKeyword {
 	TsRequire;
 	TsDefault;
 	TsType;
+	TsAbstract;
+	TsReadonly;
 }
 
 enum TsTokenDef {
