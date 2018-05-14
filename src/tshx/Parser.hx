@@ -48,7 +48,22 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<TsToken>, TsToken> 
 	function declaration() {
 		var modifier = modifier(); // TODO: do something with these?
 		var r = switch stream {
-			case [{def: TKeyword(TsVar | TsConst | TsLet)}, i = identifier(), t = popt(typeAnnotation)]:
+			case [{def:TKeyword(TsConst)}, i = identifier()]:
+				switch stream {
+					case [{def:TAssign}, {def:TNumber(s)}]:
+						topt(TSemicolon);
+						DVariable({
+							name: i,
+							type: null
+						});
+					case [t = popt(typeAnnotation)]:
+						topt(TSemicolon);
+						DVariable({
+							name: i,
+							type: null
+						});
+				}
+			case [{def: TKeyword(TsVar | TsLet)}, i = identifier(), t = popt(typeAnnotation)]:
 				topt(TSemicolon);
 				DVariable({
 					name: i,
@@ -61,6 +76,11 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<TsToken>, TsToken> 
 				});
 			case [i = Interface()]:
 				DInterface(i);
+			case [{def:TKeyword(TsAbstract)}]:
+				switch stream {
+					case [c = Class()]:
+						DClass(c);
+				}
 			case [c = Class()]:
 				DClass(c);
 			case [en = Enum()]:
@@ -81,14 +101,12 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<TsToken>, TsToken> 
 						});
 				}
 			case [{def: TKeyword(TsImport)}]:
-
 				switch stream {
 					case [{def: TLBrace}, el = psep(TComma, reference), { def:TRBrace }, { def : TIdent("from") }, { def : TString(path) }]:
 						DImport(el, path);
 					case [e = reference(), { def : TIdent("from") }, { def : TString(path) }]:
 						DImport([e], path);
 				}
-
 			case [{def:TKeyword(TsExport)}]:
 				switch stream {
 					case [{def: TLBrace}, el = psep(TComma, reference), { def:TRBrace }]:
@@ -345,6 +363,7 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<TsToken>, TsToken> 
 	function typeMember(isClass) {
 		var isPublic = publicOrPrivate();
 		var isStatic = isClass ? Static() : false;
+		var isReadonly = Readonly();
 		var r = switch stream {
 			case [n = propertyName()]:
 				typeMemberProperty(isPublic, isStatic, n);
@@ -414,6 +433,13 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<TsToken>, TsToken> 
 	function Static() {
 		return switch stream {
 			case [{def: TKeyword(TsStatic)}]: true;
+			case _: false;
+		}
+	}
+
+	function Readonly() {
+		return switch stream {
+			case [{def: TKeyword(TsReadonly)}]: true;
 			case _: false;
 		}
 	}
