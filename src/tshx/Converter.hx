@@ -25,6 +25,96 @@ class Converter {
 
 	public function convert(module:TsModule) {
 		convertDecl(DModule(module));
+
+		for(name in modules.keys() ) {
+			if (modules[name].toplevel.length > 0) {
+				modules[name].types.push({
+					pack: [],
+					name: name.replace("/", "_") + "TopLevel",
+					pos: nullPos,
+					isExtern: true,
+					kind: TDClass(),
+					fields: modules[name].toplevel
+				});
+			}
+		}
+
+		cleanupDuplicateName();
+		createExterns();
+	}
+
+	function cleanupDuplicateName(): Void{
+		for(name in modules.keys() ) {
+			for(type in modules[name].types ) {
+				var parent_fields : Array<haxe.macro.Field> = [];
+				var sc = null;
+				switch(type.kind){
+					case TDClass(superClass, _, _):
+						sc = superClass;
+						if(superClass != null){
+							parent_fields = parent_fields.concat(getFields(superClass.name ) );
+						}
+					default:
+				}
+
+				var field_names = [for(f in parent_fields ) f.name ];
+
+				field_names.remove( "new" );
+
+				var filtered_field = type.fields.filter(function (v){ return field_names.indexOf(v.name) == -1;});
+
+				type.fields = filtered_field;
+			}
+		}
+	}
+
+	function createExterns()
+	{
+		for(name in modules.keys() ) {
+			for( type in modules[name].types ){
+
+				switch( type.kind ){
+					case TDClass(_,_,_):
+					default: continue;
+				}
+				var type_name = type.name;
+				var extern_name = '$name.$type_name';
+				var param = {expr: EConst(CString(extern_name)) ,pos: null};
+				var meta_data : MetadataEntry = { name : ':native', pos: null, params: [param] };
+				type.meta = [meta_data];
+			}
+		}
+	}
+
+	function getFields(name: String) : Array<haxe.macro.Field>{
+
+		var current_type = null;
+		for(module_name in modules.keys() ) {
+			for(type in modules[module_name].types ) {
+				if(type.name == name){
+					current_type = type;
+					break;
+				}
+			}
+		}
+
+		if(current_type != null){
+
+			var fields = current_type.fields.copy();
+
+			switch(current_type.kind){
+				case TDClass(superClass, _, _):
+					if(superClass != null){
+						fields = fields.concat(getFields(superClass.name ) );
+					}
+				default:
+
+			}
+
+			return fields;
+		} else {
+			return [];
+		}
 	}
 
 	function convertDecl(d:TsDeclaration) {
@@ -115,16 +205,6 @@ class Converter {
 		currentModule = modules[name];
 		for (decl in m.elements) {
 			convertDecl(decl);
-		}
-		if (modules[name].toplevel.length > 0) {
-			modules[name].types.push({
-				pack: [],
-				name: name.replace("/", "_") + "TopLevel",
-				pos: nullPos,
-				isExtern: true,
-				kind: TDClass(),
-				fields: modules[name].toplevel
-			});
 		}
 	}
 
