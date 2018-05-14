@@ -48,9 +48,7 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<TsToken>, TsToken> 
 	function declaration() {
 		var modifier = modifier(); // TODO: do something with these?
 		var r = switch stream {
-
-			case [{def:TKeyword(TsConst)}, i = identifier() ]:
-
+			case [{def:TKeyword(TsConst)}, i = identifier()]:
 				switch stream {
 					case [{def:TAssign}, {def:TNumber(s)}]:
 						topt(TSemicolon);
@@ -58,8 +56,7 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<TsToken>, TsToken> 
 							name: i,
 							type: null
 						});
-
-					case [ t = popt(typeAnnotation)]:
+					case [t = popt(typeAnnotation)]:
 						topt(TSemicolon);
 						DVariable({
 							name: i,
@@ -72,7 +69,6 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<TsToken>, TsToken> 
 					name: i,
 					type: t
 				});
-
 			case [{def: TKeyword(TsFunction)}, i = identifier(), call = callSignature()]:
 				DFunction({
 					name: i,
@@ -82,7 +78,6 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<TsToken>, TsToken> 
 				DInterface(i);
 			case [{def:TKeyword(TsAbstract)}]:
 				switch stream {
-
 					case [c = Class()]:
 						DClass(c);
 				}
@@ -106,14 +101,12 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<TsToken>, TsToken> 
 						});
 				}
 			case [{def: TKeyword(TsImport)}]:
-
 				switch stream {
 					case [{def: TLBrace}, el = psep(TComma, reference), { def:TRBrace }, { def : TIdent("from") }, { def : TString(path) }]:
 						DImport(el, path);
 					case [e = reference(), { def : TIdent("from") }, { def : TString(path) }]:
 						DImport([e], path);
 				}
-
 			case [{def:TKeyword(TsExport)}]:
 				switch stream {
 					case [{def: TLBrace}, el = psep(TComma, reference), { def:TRBrace }]:
