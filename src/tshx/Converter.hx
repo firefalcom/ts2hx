@@ -26,7 +26,7 @@ class Converter {
 	public function convert(module:TsModule) {
 		convertDecl(DModule(module));
 
-		for(name in modules.keys() ) {
+		for(name in modules.keys()) {
 			if (modules[name].toplevel.length > 0) {
 				modules[name].types.push({
 					pack: [],
@@ -43,23 +43,23 @@ class Converter {
 		createExterns();
 	}
 
-	function cleanupDuplicateName(): Void{
-		for(name in modules.keys() ) {
-			for(type in modules[name].types ) {
+	function cleanupDuplicateName():Void{
+		for(name in modules.keys()) {
+			for(type in modules[name].types) {
 				var parent_fields : Array<haxe.macro.Field> = [];
 				var sc = null;
 				switch(type.kind){
 					case TDClass(superClass, _, _):
 						sc = superClass;
 						if(superClass != null){
-							parent_fields = parent_fields.concat(getFields(superClass.name ) );
+							parent_fields = parent_fields.concat(getFields(superClass.name));
 						}
 					default:
 				}
 
-				var field_names = [for(f in parent_fields ) f.name ];
+				var field_names = [for(f in parent_fields ) f.name];
 
-				field_names.remove( "new" );
+				field_names.remove("new");
 
 				var filtered_field = type.fields.filter(function (v){ return field_names.indexOf(v.name) == -1;});
 
@@ -68,10 +68,9 @@ class Converter {
 		}
 	}
 
-	function createExterns()
-	{
-		for(name in modules.keys() ) {
-			for( type in modules[name].types ){
+	function createExterns() {
+		for(name in modules.keys()) {
+			for(type in modules[name].types){
 
 				switch( type.kind ){
 					case TDClass(_,_,_):
@@ -80,17 +79,17 @@ class Converter {
 				var type_name = type.name;
 				var extern_name = '$name.$type_name';
 				var param = {expr: EConst(CString(extern_name)) ,pos: null};
-				var meta_data : MetadataEntry = { name : ':native', pos: null, params: [param] };
+				var meta_data : MetadataEntry = {name: ':native', pos: null, params: [param]};
 				type.meta = [meta_data];
 			}
 		}
 	}
 
-	function getFields(name: String) : Array<haxe.macro.Field>{
+	function getFields(name:String):Array<haxe.macro.Field>{
 
 		var current_type = null;
-		for(module_name in modules.keys() ) {
-			for(type in modules[module_name].types ) {
+		for(module_name in modules.keys()) {
+			for(type in modules[module_name].types) {
 				if(type.name == name){
 					current_type = type;
 					break;
@@ -105,7 +104,7 @@ class Converter {
 			switch(current_type.kind){
 				case TDClass(superClass, _, _):
 					if(superClass != null){
-						fields = fields.concat(getFields(superClass.name ) );
+						fields = fields.concat(getFields(superClass.name));
 					}
 				default:
 
@@ -123,7 +122,7 @@ class Converter {
 				convertModule(m);
 			case DInterface(i):
 				var name = capitalize(i.name);
-				var td = getTypeByName(name );
+				var td = getTypeByName(name);
 
 				if(td == null){
 					currentModule.types.push(convertInterface(i));
@@ -132,7 +131,7 @@ class Converter {
 				}
 			case DClass(c):
 				var name = capitalize(c.name);
-				var td = getTypeByName(name );
+				var td = getTypeByName(name);
 
 				if(td == null){
 					currentModule.types.push(convertClass(c));
