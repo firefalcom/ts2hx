@@ -326,7 +326,7 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<TsToken>, TsToken> 
 			case [{def:TLBrack}, i = popt(identifier), str = popt(string), {def:TRBrack}]: typeNext(TTypeLiteral(TArray(t,i == null ? str : i)));
 			case [{def:TPipe}, t2 = type()]:
 				var tpass;
-				switch( t2 ){
+				switch(t2){
 					case TTypeReference(tr):
 						if(tr.path[0] == 'null' || tr.path[0] == 'undefined'){
 							tpass = t;
@@ -337,7 +337,6 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<TsToken>, TsToken> 
 						tpass = TUnion(t, t2);
 				}
 				typeNext(tpass);
-
 			case [{def:TAnd}, t2 = type()]: typeNext(TIntersection(t, t2));
 			case _: t;
 		}
@@ -356,12 +355,10 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<TsToken>, TsToken> 
 		}
 	}
 
-	function convertPath( path : Array<String> ){
-
-		if( path.length == 1 && path[ 0 ] == 'Nullable'){
+	function convertPath(path:Array<String>){
+		if(path.length == 1 && path[0] == 'Nullable'){
 			return ['Null'];
 		}
-
 		return path;
 	}
 
@@ -369,7 +366,7 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<TsToken>, TsToken> 
 		return switch stream {
 			case [path = identifierPath(), tl = popt(typeArguments)]:
 				{
-					path: convertPath( path ),
+					path: convertPath(path),
 					params: tl == null ? [] : tl
 				}
 		}
