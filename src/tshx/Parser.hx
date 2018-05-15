@@ -301,7 +301,7 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<TsToken>, TsToken> 
 			case [{def: TString(v)}]: TValue(VString(v));
 			case [{def: TIdent("any")}]: TPredefined(TAny);
 			case [{def: TIdent("number")}]: TPredefined(TNumber);
-			case [{def: TIdent("boolean" | "bool")}]: TPredefined(TBoolean);
+			case [{def: TIdent("boolean" | "bool" | "Boolean")}]: TPredefined(TBoolean);
 			case [{def: TIdent("string")}]: TPredefined(TString);
 			case [{def: TIdent("void")}]: TPredefined(TVoid);
 			case [{def: TKeyword(TsTypeof)}, path = identifierPath()]: TTypeQuery(path);
@@ -321,10 +321,22 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<TsToken>, TsToken> 
 		});
 	}
 
-	function typeNext(t) {
+	function typeNext(t:TsType){
 		return switch stream {
 			case [{def:TLBrack}, i = popt(identifier), str = popt(string), {def:TRBrack}]: typeNext(TTypeLiteral(TArray(t,i == null ? str : i)));
-			case [{def:TPipe}, t2 = type()]: typeNext(TUnion(t, t2));
+			case [{def:TPipe}, t2 = type()]:
+				var tpass;
+				switch(t2){
+					case TTypeReference(tr):
+						if(tr.path[0] == 'null' || tr.path[0] == 'undefined'){
+							tpass = t;
+						} else {
+							tpass =  TUnion(t, t2);
+						}
+					default:
+						tpass = TUnion(t, t2);
+				}
+				typeNext(tpass);
 			case [{def:TAnd}, t2 = type()]: typeNext(TIntersection(t, t2));
 			case _: t;
 		}
@@ -343,11 +355,18 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<TsToken>, TsToken> 
 		}
 	}
 
+	function convertPath(path:Array<String>){
+		if(path.length == 1 && path[0] == 'Nullable'){
+			return ['Null'];
+		}
+		return path;
+	}
+
 	function typeReference() {
 		return switch stream {
 			case [path = identifierPath(), tl = popt(typeArguments)]:
 				{
-					path: path,
+					path: convertPath(path),
 					params: tl == null ? [] : tl
 				}
 		}
