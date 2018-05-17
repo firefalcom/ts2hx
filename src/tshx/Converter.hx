@@ -456,12 +456,14 @@ class Converter {
 			params: tref.params.map(function(t) return TPType(convertType(t))),
 			sub: null
 		};
-		switch [tPath.name, tPath.pack] {
-			case ["Object", []]:
+		switch [tPath.name, tPath.pack, tPath.params] {
+			case ["Null", [], []]:
 				tPath.name = "Dynamic";
-			case ["RegExp", []]:
+			case ["Object", [], _]:
+				tPath.name = "Dynamic";
+			case ["RegExp", [], _]:
 				tPath.pack = ["js"];
-			case ["Function", []]:
+			case ["Function", [], _]:
 				tPath.pack = ["haxe"];
 				tPath.name = "Constraints";
 				tPath.sub = "Function";
