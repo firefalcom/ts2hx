@@ -381,6 +381,7 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<TsToken>, TsToken> 
 
 	function typeMember(isClass) {
 		var isPublic = publicOrPrivate();
+		var isAbstract = isAbstract();
 		var isStatic = isClass ? Static() : false;
 		var isReadonly = Readonly();
 		var r = switch stream {
@@ -444,8 +445,16 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<TsToken>, TsToken> 
 	function publicOrPrivate() {
 		return switch stream {
 			case [{def: TKeyword(TsPublic)}]: true;
+			case [{def: TKeyword(TsProtected)}]: false;
 			case [{def: TKeyword(TsPrivate)}]: false;
 			case _: true;
+		}
+	}
+
+	function isAbstract() {
+		return switch stream {
+			case [{def: TKeyword(TsAbstract)}]: true;
+			case _: false;
 		}
 	}
 

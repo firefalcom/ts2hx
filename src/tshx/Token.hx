@@ -17,6 +17,7 @@ enum TsKeyword {
 	TsStatic;
 	TsPublic;
 	TsPrivate;
+	TsProtected;
 	TsVar;
 	TsConst;
 	TsLet;
