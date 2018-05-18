@@ -16,6 +16,8 @@ class Converter {
 	static var tInt = { pack: [], name: "Int", sub: null, params: [] };
 	static var tString = { pack: [], name: "String", sub: null, params: [] };
 
+	static var reservedFieldName = ['continue'];
+
 	public var modules(default, null):Map<String, HaxeModule>;
 	var currentModule:HaxeModule;
 
@@ -329,6 +331,7 @@ class Converter {
 	}
 
 	function convertMember(mem:TsTypeMember) {
+		var meta : Array<Dynamic>= [];
 		var o = switch(mem) {
 			case TProperty(sig):
 				var kind = FVar(sig.type == null ? tDynamic : convertType(sig.type));
@@ -338,6 +341,12 @@ class Converter {
 					case TIdentifier("constructor"):
 						sig.callSignature.type = TPredefined(TVoid);
 						sig.name = TIdentifier("new");
+					case TIdentifier(name):
+						if(reservedFieldName.indexOf(name)!=-1){
+							var param = {expr: EConst(CString(name)) ,pos: null};
+							meta.push({name:":native", params: [param], pos: nullPos});
+							sig.name = TIdentifier('_' + name);
+						}
 					default:
 				}
 				var kind = FFun(convertFunction(sig.callSignature));
@@ -345,11 +354,14 @@ class Converter {
 			case TCall(_) | TConstruct(_) | TIndex(_):
 				return null;
 		}
+		if(o.opt){
+			meta.push({name: ":optional", params: [], pos: nullPos});
+		}
 		return {
 			name: convertPropertyName(o.name),
 			kind: o.kind,
 			doc: null,
-			meta: o.opt ? [{name: ":optional", params: [], pos: nullPos}] : [],
+			meta: meta,
 			access: o.access,
 			pos: nullPos
 		}
