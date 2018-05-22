@@ -17,6 +17,8 @@ class Converter {
 	static var tString = { pack: [], name: "String", sub: null, params: [] };
 
 	static var reservedFieldName = ['continue'];
+	static var excludedTypeName = ['Math'];
+
 	static var printPrivate = false;
 
 	public var modules(default, null):Map<String, HaxeModule>;
@@ -43,6 +45,7 @@ class Converter {
 		}
 
 		cleanupDuplicateName();
+		removeExcludedTypes();
 		createExterns();
 	}
 
@@ -68,6 +71,16 @@ class Converter {
 
 				type.fields = filtered_field;
 			}
+		}
+	}
+
+	function removeExcludedTypes() {
+		for(name in modules.keys()) {
+			var module = modules[name];
+
+			module.types = module.types.filter(function(item){
+				return excludedTypeName.indexOf(item.name) == -1;
+			});
 		}
 	}
 
