@@ -429,6 +429,7 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<TsToken>, TsToken> 
 					name: n,
 					optional: opt,
 					isStatic: isStatic,
+					isPublic: isPublic,
 					callSignature: call
 				});
 			case _:
@@ -437,6 +438,7 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<TsToken>, TsToken> 
 					name: n,
 					optional: opt,
 					isStatic: isStatic,
+					isPublic: isPublic,
 					type: t
 				});
 		}
