@@ -41,6 +41,7 @@ typedef TsPropertySignature = {
 	name: TsPropertyName,
 	?optional: Bool,
 	?isStatic: Bool,
+	?isPublic: Bool,
 	type: Null<TsType>,
 }
 
@@ -61,6 +62,7 @@ typedef TsMethodSignature = {
 	name: TsPropertyName,
 	optional: Bool,
 	isStatic: Bool,
+	isPublic: Bool,
 	callSignature: TsCallSignature,
 }
 

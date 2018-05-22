@@ -17,6 +17,7 @@ class Converter {
 	static var tString = { pack: [], name: "String", sub: null, params: [] };
 
 	static var reservedFieldName = ['continue'];
+	static var printPrivate = false;
 
 	public var modules(default, null):Map<String, HaxeModule>;
 	var currentModule:HaxeModule;
@@ -335,7 +336,13 @@ class Converter {
 		var o = switch(mem) {
 			case TProperty(sig):
 				var kind = FVar(sig.type == null ? tDynamic : convertType(sig.type));
-				{ kind: kind, name: sig.name, opt: sig.optional, access: if (sig.isStatic) [AStatic] else [] };
+				var access = [];
+				if(sig.isStatic) access.push(AStatic);
+				if(!sig.isPublic) {
+					if(!printPrivate) return null;
+					access.push(APrivate);
+				}
+				{ kind: kind, name: sig.name, opt: sig.optional, access: access };
 			case TMethod(sig):
 				switch (sig.name) {
 					case TIdentifier("constructor"):
@@ -349,8 +356,14 @@ class Converter {
 						}
 					default:
 				}
+				var access = [];
+				if(sig.isStatic) access.push(AStatic);
+				if(!sig.isPublic) {
+					if(!printPrivate) return null;
+					access.push(APrivate);
+				}
 				var kind = FFun(convertFunction(sig.callSignature));
-				{ kind: kind, name: sig.name, opt: sig.optional, access: if (sig.isStatic) [AStatic] else [] };
+				{ kind: kind, name: sig.name, opt: sig.optional, access: access };
 			case TCall(_) | TConstruct(_) | TIndex(_):
 				return null;
 		}
