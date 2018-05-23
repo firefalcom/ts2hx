@@ -65,7 +65,7 @@ class Converter {
 
 				var field_names = [for(f in parent_fields ) f.name];
 
-				field_names.remove("new");
+				while( field_names.remove('new') ){}
 
 				var filtered_field = type.fields.filter(function (v){ return field_names.indexOf(v.name) == -1;});
 
