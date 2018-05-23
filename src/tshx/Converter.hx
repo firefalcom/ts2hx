@@ -46,6 +46,7 @@ class Converter {
 
 		cleanupDuplicateName();
 		removeExcludedTypes();
+		convertInterfaceWhichDerivedFromClass();
 		createExterns();
 	}
 
@@ -98,6 +99,41 @@ class Converter {
 				var meta_data : MetadataEntry = {name: ':native', pos: null, params: [param]};
 				type.meta = [meta_data];
 			}
+		}
+	}
+
+	function convertInterfaceWhichDerivedFromClass() {
+		for(name in modules.keys()) {
+			for(type in modules[name].types){
+				switch(type.kind){
+					case TDClass(parent, interfaces, true):
+						if(parent != null){
+							if(!isInterface(parent.name))
+							{
+								parent = null;
+								continue;
+							}
+						}
+
+						if(interfaces != null){
+							interfaces = interfaces.filter(function(a) return isInterface(a.name));
+						}
+
+						type.kind = TDClass(parent, interfaces, true);
+					default: continue;
+				}
+			}
+		}
+	}
+
+	function isInterface(name:String):Bool{
+		var type = getTypeByName(name);
+		if(type == null){
+			return false;
+		}
+		return switch(type.kind){
+			case TDClass(_,_,true): true;
+			default: false;
 		}
 	}
 
@@ -223,7 +259,6 @@ class Converter {
 	function convertInterface(i:TsInterface) : TypeDefinition {
 		var fields = convertFields(i.t);
 		var parents = i.parents.map(convertTypeReference);
-		var kind = parents.length == 0 ? TAnonymous(fields) : TExtend(parents, fields);
 		var td = {
 			pack: [],
 			name: capitalize(i.name),
@@ -231,30 +266,22 @@ class Converter {
 			meta: [],
 			params: i.params.map(convertTypeParameter),
 			isExtern: false,
-			kind: TDAlias(kind),
-			fields: []
+			kind: TDClass(null, parents, true),
+			fields: fields
 		}
 		return td;
 	}
 
 	function mergeInterface(i:TsInterface, typeDefinition:TypeDefinition) : Void {
 		var fields = convertFields(i.t);
-		var parents = i.parents.map(convertTypeReference);
+		var parent_interfaces = i.parents.map(convertTypeReference);
 
 		switch(typeDefinition.kind){
-			case TDAlias(kind):
-				switch(kind){
-					case TAnonymous(existing_fields):
-						var kind = TAnonymous(existing_fields.concat(fields));
-						typeDefinition.kind = TDAlias(kind);
 
-					case TExtend(parents, existing_fields):
-						var kind = TExtend(parents, existing_fields.concat(fields));
-						typeDefinition.kind = TDAlias(kind);
+			case TDClass(parent, existing_interfaces, is_interface):
+				typeDefinition.fields = typeDefinition.fields.concat(fields);
+				typeDefinition.kind = TDClass(parent, existing_interfaces.concat(parent_interfaces), is_interface);
 
-					default:
-						trace("Unsupported type, unable to merge interface");
-				}
 			default:
 				trace("Unsupported type");
 		}
@@ -263,8 +290,7 @@ class Converter {
 	function convertClass(c:TsClass) : TypeDefinition {
 		var fields = convertFields(c.t);
 		var interfaces = c.interfaces.map(convertTypeReference);
-		// TODO: can't implement typedefs, I guess we can rely on structural subtyping
-		interfaces = [];
+
 		var td = {
 			pack: [],
 			name: capitalize(c.name),
@@ -302,13 +328,13 @@ class Converter {
 						trace("Unsupported type, unable to merge interface");
 				}
 
-			case TDClass(parent, existing_interfaces):
+			case TDClass(parent, existing_interfaces, _):
 				if(parent != null && parent != parent_class){
 					trace("Merging of class with different parents is not supported");
 				}
 
 				typeDefinition.fields = typeDefinition.fields.concat(fields);
-				typeDefinition.kind = TDClass(parent_class, existing_interfaces.concat(interfaces));
+				typeDefinition.kind = TDClass(parent_class, existing_interfaces.concat(interfaces), false);
 
 			default:
 				trace("Unsupported");
