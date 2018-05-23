@@ -354,6 +354,8 @@ class Converter {
 				if(!sig.isPublic) {
 					if(!printPrivate) return null;
 					access.push(APrivate);
+				} else {
+					access.push(APublic);
 				}
 				{ kind: kind, name: sig.name, opt: sig.optional, access: access };
 			case TMethod(sig):
@@ -374,6 +376,8 @@ class Converter {
 				if(!sig.isPublic) {
 					if(!printPrivate) return null;
 					access.push(APrivate);
+				} else {
+					access.push(APublic);
 				}
 				var kind = FFun(convertFunction(sig.callSignature));
 				{ kind: kind, name: sig.name, opt: sig.optional, access: access };
