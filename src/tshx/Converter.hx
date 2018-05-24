@@ -45,6 +45,7 @@ class Converter {
 		}
 
 		cleanupDuplicateName();
+		alignFieldSignature();
 		removeExcludedTypes();
 		convertInterfaceWhichDerivedFromClass();
 		createExterns();
@@ -64,7 +65,7 @@ class Converter {
 					default:
 				}
 
-				var field_names = [for(f in parent_fields ) f.name];
+				var field_names = [for(f in parent_fields) f.name];
 
 				while( field_names.remove('new') ){}
 
@@ -73,6 +74,44 @@ class Converter {
 				type.fields = filtered_field;
 			}
 		}
+	}
+
+
+	function alignFieldSignature(){
+		for(name in modules.keys()) {
+			for(type in modules[name].types) {
+				var parent_fields : Array<haxe.macro.Field> = [];
+				var interfaces = null;
+				switch(type.kind){
+					case TDClass(_,null,_): continue;
+					case TDClass(_, _interfaces, _): interfaces = _interfaces.map(
+						function(t) if(t.params == null || t.params.length== 0) return getTypeByName(t.name) else return null );
+					default: continue;
+				}
+
+				for(f in type.fields){
+					if( f.name == 'new' ) continue;
+
+					var interface_signature = getInterfaceSignature(interfaces, f.name);
+
+					if( interface_signature != null ){
+						f.kind = interface_signature;
+					}
+				}
+			}
+		}
+	}
+
+	function getInterfaceSignature(interfaces:Array<haxe.macro.TypeDefinition>, name : String) : FieldType{
+
+		for(_interface in interfaces){
+			if(_interface == null || _interface.fields == null) continue;
+			for(field in _interface.fields) {
+				if(field.name == name) return field.kind;
+			}
+		}
+
+		return null;
 	}
 
 	function removeExcludedTypes() {
@@ -215,11 +254,11 @@ class Converter {
 		}
 	}
 
-	function convertFields(fl:Array<TsTypeMember>) {
+	function convertFields(fl:Array<TsTypeMember>, isInterface:Bool) {
 		var fields = [];
 		var fieldMap = new Map();
 		for (mem in fl) {
-			var field = convertMember(mem);
+			var field = convertMember(mem, isInterface);
 			if (field != null) {
 				if (fieldMap.exists(field.name)) {
 					var field2 = fieldMap[field.name];
@@ -257,7 +296,7 @@ class Converter {
 	}
 
 	function convertInterface(i:TsInterface) : TypeDefinition {
-		var fields = convertFields(i.t);
+		var fields = convertFields(i.t, true);
 		var parents = i.parents.map(convertTypeReference);
 		var td = {
 			pack: [],
@@ -273,7 +312,7 @@ class Converter {
 	}
 
 	function mergeInterface(i:TsInterface, typeDefinition:TypeDefinition) : Void {
-		var fields = convertFields(i.t);
+		var fields = convertFields(i.t, true);
 		var parent_interfaces = i.parents.map(convertTypeReference);
 
 		switch(typeDefinition.kind){
@@ -283,12 +322,12 @@ class Converter {
 				typeDefinition.kind = TDClass(parent, existing_interfaces.concat(parent_interfaces), is_interface);
 
 			default:
-				trace("Unsupported type");
+				trace("Unsupported");
 		}
 	}
 
 	function convertClass(c:TsClass) : TypeDefinition {
-		var fields = convertFields(c.t);
+		var fields = convertFields(c.t, false);
 		var interfaces = c.interfaces.map(convertTypeReference);
 
 		var td = {
@@ -305,7 +344,7 @@ class Converter {
 	}
 
 	function mergeClass(c:TsClass, typeDefinition : TypeDefinition ) : Void{
-		var fields = convertFields(c.t);
+		var fields = convertFields(c.t, false);
 		var interfaces = c.interfaces.map(convertTypeReference);
 		interfaces = [];
 		var parent_class = c.parentClass == null ? null : convertTypeReference(c.parentClass);
@@ -370,7 +409,7 @@ class Converter {
 		return td;
 	}
 
-	function convertMember(mem:TsTypeMember) {
+	function convertMember(mem:TsTypeMember, isInterface:Bool) {
 		var meta : Array<Dynamic>= [];
 		var o = switch(mem) {
 			case TProperty(sig):
@@ -380,7 +419,7 @@ class Converter {
 				if(!sig.isPublic) {
 					if(!printPrivate) return null;
 					access.push(APrivate);
-				} else {
+				} else if(!isInterface){
 					access.push(APublic);
 				}
 				{ kind: kind, name: sig.name, opt: sig.optional, access: access };
@@ -402,7 +441,7 @@ class Converter {
 				if(!sig.isPublic) {
 					if(!printPrivate) return null;
 					access.push(APrivate);
-				} else {
+				} else if(!isInterface) {
 					access.push(APublic);
 				}
 				var kind = FFun(convertFunction(sig.callSignature));
@@ -475,7 +514,7 @@ class Converter {
 			case TTypeLiteral(t):
 				switch(t) {
 					case TObject(o):
-						var fields:Array<Field> = convertFields(o);
+						var fields:Array<Field> = convertFields(o, false);
 						TAnonymous(fields.filter(function(v) return v != null));
 					case TArray(t):
 						TPath({ name: "Array", pack: [], params: [TPType(convertType(t))], sub: null});
