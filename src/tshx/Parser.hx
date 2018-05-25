@@ -104,8 +104,13 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<TsToken>, TsToken> 
 				switch stream {
 					case [{def: TLBrace}, el = psep(TComma, reference), { def:TRBrace }, { def : TIdent("from") }, { def : TString(path) }]:
 						DImport(el, path);
-					case [e = reference(), { def : TIdent("from") }, { def : TString(path) }]:
-						DImport([e], path);
+					case [e = reference()]:
+						switch stream {
+							case [{ def : TIdent("from") }, { def : TString(path) }]:
+								DImport([e], path);
+							case [{def: TComma}, {def: TLBrace}, el = psep(TComma, reference), { def:TRBrace }, { def : TIdent("from") }, { def : TString(path) }]:
+								DImport([e].concat(el), path);
+						}
 				}
 			case [{def:TKeyword(TsExport)}]:
 				switch stream {
