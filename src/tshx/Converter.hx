@@ -76,25 +76,26 @@ class Converter {
 		}
 	}
 
-
 	function alignFieldSignature(){
 		for(name in modules.keys()) {
 			for(type in modules[name].types) {
 				var parent_fields : Array<haxe.macro.Field> = [];
 				var interfaces = null;
 				switch(type.kind){
-					case TDClass(_,null,_): continue;
-					case TDClass(_, _interfaces, _): interfaces = _interfaces.map(
-						function(t) if(t.params == null || t.params.length== 0) return getTypeByName(t.name) else return null );
-					default: continue;
+					case TDClass(_, null,_):
+						continue;
+					case TDClass(_, _interfaces, _):
+						interfaces = _interfaces.map(function(t) if(t.params == null || t.params.length== 0) return getTypeByName(t.name) else return null);
+					default:
+						continue;
 				}
 
 				for(f in type.fields){
-					if( f.name == 'new' ) continue;
+					if(f.name == 'new') continue;
 
 					var interface_signature = getInterfaceSignature(interfaces, f.name);
 
-					if( interface_signature != null ){
+					if(interface_signature != null){
 						f.kind = interface_signature;
 					}
 				}
@@ -102,8 +103,7 @@ class Converter {
 		}
 	}
 
-	function getInterfaceSignature(interfaces:Array<haxe.macro.TypeDefinition>, name : String) : FieldType{
-
+	function getInterfaceSignature(interfaces:Array<haxe.macro.TypeDefinition>, name:String):FieldType{
 		for(_interface in interfaces){
 			if(_interface == null || _interface.fields == null) continue;
 			for(field in _interface.fields) {
