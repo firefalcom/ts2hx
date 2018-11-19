@@ -303,7 +303,7 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<TsToken>, TsToken> 
 		case [{ def : TAnd }]: null;
 		default: null;
 		}
-		return typeNext(switch stream {
+		var t = typeNext(switch stream {
 			case [{def: TNumber(v)}]: TValue(VNumber(v));
 			case [{def: TString(v)}]: TValue(VString(v));
 			case [{def: TIdent("any")}]: TPredefined(TAny);
@@ -326,6 +326,8 @@ class Parser extends hxparse.Parser<hxparse.LexerTokenSource<TsToken>, TsToken> 
 					throw noMatch();
 				}
 		});
+
+		return t;
 	}
 
 	function typeNext(t:TsType){
