@@ -16,7 +16,7 @@ class Converter {
 	static var tInt = { pack: [], name: "Int", sub: null, params: [] };
 	static var tString = { pack: [], name: "String", sub: null, params: [] };
 
-	static var reservedFieldName = ['continue'];
+	static var reservedFieldName = ['continue', 'operator', 'dynamic'];
 	static var excludedTypeName = ['Math'];
 
 	static var printPrivate = false;
@@ -426,6 +426,15 @@ class Converter {
 				} else if(!isInterface){
 					access.push(APublic);
 				}
+				switch (sig.name) {
+					case TIdentifier(name):
+						if(reservedFieldName.indexOf(name)!=-1){
+							var param = {expr: EConst(CString(name)) ,pos: null};
+							meta.push({name:":native", params: [param], pos: nullPos});
+							sig.name = TIdentifier('_' + name);
+						}
+					default:
+				}
 				{ kind: kind, name: sig.name, opt: sig.optional, access: access };
 			case TMethod(sig):
 				switch (sig.name) {
@@ -484,10 +493,11 @@ class Converter {
 	}
 
 	function convertArgumentName(name:String):String{
-		return switch(name){
-			case 'dynamic': '_dynamic';
-			default : name;
+		if(reservedFieldName.indexOf(name) != -1){
+			return '_' + name;
 		}
+
+		return name;
 	}
 
 	function convertTypeParameter(tp:TsTypeParameter):TypeParamDecl {
