@@ -28,19 +28,23 @@ class Converter {
 		modules = new Map();
 	}
 
-	public function convert(module:TsModule) {
+	public function convert(module:TsModule, skipTopLevel:Bool) {
 		convertDecl(DModule(module));
 
 		for(name in modules.keys()) {
 			if (modules[name].toplevel.length > 0) {
-				modules[name].types.push({
-					pack: [],
-					name: name.replace("/", "_") + "TopLevel",
-					pos: nullPos,
-					isExtern: true,
-					kind: TDClass(),
-					fields: modules[name].toplevel
-				});
+				if(skipTopLevel){
+					modules[name].toplevel = [];
+				} else {
+					modules[name].types.push({
+						pack: [],
+						name: name.replace("/", "_") + "TopLevel",
+						pos: nullPos,
+						isExtern: true,
+						kind: TDClass(),
+						fields: modules[name].toplevel
+					});
+				}
 			}
 		}
 

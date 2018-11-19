@@ -11,6 +11,7 @@ private class Config {
 	public var ignoreErrors = false;
 	public var inclusionFilters:Array<EReg> = [];
 	public var header:String;
+	public var skipTopLevel = false;
 
 	public function new() { }
 }
@@ -43,6 +44,10 @@ class Main {
 			@doc("Prepend generated file with header file content")
 			"--header" => function(header:String) {
 				config.header = header;
+			},
+			@doc("Do not generate top level definition")
+			"--skip-top-level" => function() {
+				config.skipTopLevel = true;
 			},
 			"--help" => function() {
 				printHelp = true;
@@ -155,7 +160,7 @@ class Main {
 		});
 		// Step 2: Convert the Typescript declarations to Haxe declarations.
 		var converter = new tshx.Converter();
-		converter.convert(decls);
+		converter.convert(decls, config.skipTopLevel);
 		// Make sure the output directory exists.
 		var outDir = config.outDir + "/" + name;
 		if (!sys.FileSystem.exists(outDir)) {
